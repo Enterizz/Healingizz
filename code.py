@@ -145,12 +145,12 @@ QUEST_TEMPLATES = [
         "desc": "Chọn 1 suy nghĩ tiêu cực, tìm bằng chứng ủng hộ/phản bác, rồi viết lại phiên bản cân bằng.",
         "points": 30
     },
-    {
-        "type": "mindful_walk",
-        "title": "Đi bộ chánh niệm (5 phút)",
-        "desc": "Đi chậm rãi, chú ý bàn chân chạm đất, nhịp thở, âm thanh xung quanh.",
-        "points": 20
-    },
+    # {
+    #     "type": "mindful_walk",
+    #     "title": "Đi bộ chánh niệm (5 phút)",
+    #     "desc": "Đi chậm rãi, chú ý bàn chân chạm đất, nhịp thở, âm thanh xung quanh.",
+    #     "points": 20
+    # },
     {
         "type": "kind_act",
         "title": "Hành động tử tế ngẫu nhiên",
@@ -191,12 +191,12 @@ def mark_quest_completed(data: dict, quest: dict, payload: dict):
             "payload": payload,
             "points": quest.get("points", 0)
         }
-        # increment type count
         tc = data["game"].setdefault("quest_counts", {})
         tc[quest["type"]] = tc.get(quest["type"], 0) + 1
         save_user(data)
         add_points(data, quest.get("points", 0), reason=f"Hoàn thành: {quest['title']}")
         check_badges(data)
+        st.rerun()   # 🔑 re-run ngay để hiển thị trạng thái mới
     else:
         st.info("Bạn đã hoàn thành nhiệm vụ này hôm nay ✔️")
 
@@ -409,32 +409,53 @@ def main():
             st.caption("Chưa có user nào khác.")
 
     st.markdown("---")
-    # --- Mood check-in & quick actions ---
-    st.header("🧭 Check-in cảm xúc & Nhiệm vụ nhanh")
-    col1, col2 = st.columns([2,3])
-    with col1:
-        default_mood = 6
-        mood = st.slider("Tâm trạng (1 rất tệ → 10 rất tốt):", 1, 10, default_mood)
-        note = st.text_area("Ghi chú (tùy chọn):", placeholder="Ví dụ: Hôm nay hơi lo lắng vì deadline…", height=80)
+    today = datetime.utcnow().date()
+    done = any(datetime.fromisoformat(m["date"]).date() == today for m in data["game"].get("moods", []))
+
+    mood = st.slider(
+        "Tâm trạng của bạn (1 rất tệ → 10 rất tốt):",
+        1, 10, 5,
+        key="mood_slider",
+        disabled=done  # 🔑 khóa slider nếu đã check-in hôm nay
+    )
+
+    emoji_map = {
+        1: "😭", 2: "😢", 3: "😟", 4: "🙁", 5: "😐",
+        6: "🙂", 7: "😊", 8: "😃", 9: "😄", 10: "😍"
+    }
+    emoji = emoji_map.get(mood, "🙂")
+
+    st.markdown(f"### Cảm xúc hiện tại: {emoji} (điểm: {mood})")
+
+    if mood <= 3:
+        st.error("Hôm nay có vẻ không ổn. Gợi ý: Thử vài phút thư giãn, hít thở sâu.")
+    elif mood <= 6:
+        st.warning("Tâm trạng trung bình. Gợi ý: Viết 3 điều bạn biết ơn để tiếp thêm năng lượng.")
+    else:
+        st.success("Tâm trạng tốt! Gợi ý: Hành động tử tế để lan tỏa tích cực.")
+
+    if done:
+        st.button("Đã check-in hôm nay 🎉", disabled=True)
+    else:
         if st.button("Lưu check-in ✅"):
             data["game"].setdefault("moods", []).append({
                 "date": datetime.utcnow().isoformat(),
                 "mood": int(mood),
-                "note": note.strip()
             })
             update_streak_on_checkin(data)
             add_points(data, 10, reason="Check-in cảm xúc")
             check_badges(data)
-    with col2:
-        st.markdown("**Quick actions**")
-        if st.button("Phiên thở 1 phút"):
-            ui_breathing(60)
-            # mark a quick completion (ad-hoc)
-            q = {"type":"breathing","title":"Phiên thở nhanh","quest_id":f"quick-breath-{datetime.utcnow().date().isoformat()}","points":15}
-            mark_quest_completed(data, q, {"completed": True})
-        if st.button("Ghi 3 điều biết ơn"):
-            st.session_state["_open_grat"] = True
-            st.experimental_rerun()
+            st.rerun()  
+    # with col2:
+    #     st.markdown("**Quick actions**")
+    #     if st.button("Phiên thở 1 phút"):
+    #         ui_breathing(60)
+    #         # mark a quick completion (ad-hoc)
+    #         q = {"type":"breathing","title":"Phiên thở nhanh","quest_id":f"quick-breath-{datetime.utcnow().date().isoformat()}","points":15}
+    #         mark_quest_completed(data, q, {"completed": True})
+    #     if st.button("Ghi 3 điều biết ơn"):
+    #         st.session_state["_open_grat"] = True
+    #         st.experimental_rerun()
 
     # --- Daily quests ---
     st.markdown("---")
@@ -448,10 +469,8 @@ def main():
                 st.success("Đã hoàn thành.")
             else:
                 if q["type"] == "breathing":
-                    if st.button("Bắt đầu phiên thở", key=q["quest_id"]+"start"):
+                    if st.button("Bắt đầu thực hiện", key=q["quest_id"]+"start"):
                         ui_breathing(q.get("duration_sec",60))
-                    if st.button("Đánh dấu hoàn thành", key=q["quest_id"]+"done"):
-                        mark_quest_completed(data, q, {"completed": True})
                 elif q["type"] == "gratitude":
                     g1 = st.text_input("Biết ơn #1", key=q["quest_id"]+"g1")
                     g2 = st.text_input("Biết ơn #2", key=q["quest_id"]+"g2")
@@ -484,11 +503,15 @@ def main():
                             mark_quest_completed(data, q, {"act": desc.strip()})
                         else:
                             st.error("Mô tả ngắn gọn hành động tử tế nhé!")
-                elif q["type"] == "mini_mindful":
-                    if st.button("Bắt đầu 30s chánh niệm", key=q["quest_id"]+"start"):
-                        ui_breathing(q.get("duration_sec",30))
-                    if st.button("Hoàn thành", key=q["quest_id"]+"done"):
-                        mark_quest_completed(data, q, {"completed": True})
+                elif st.button("Bắt đầu 30s chánh niệm", key=f"mindful_{q['quest_id']}"):
+                    placeholder = st.empty()
+                    for sec in range(30, 0, -1):
+                        placeholder.metric("⏳ Thời gian còn lại", f"{sec} giây")
+                        time.sleep(1)
+                    placeholder.empty()
+                    st.success("✅ Hoàn thành 30s chánh niệm 🎉")
+                    # nếu muốn đánh dấu nhiệm vụ hoàn thành luôn:
+                    mark_quest_completed(data, q, {"completed": True})
 
     # --- Journal & export ---
     st.markdown("---")
@@ -577,12 +600,12 @@ def main():
             st.warning(f"🔔 Nhắc: {d.get('label')} — {d.get('time_iso')}")
 
     # --- Meditation video & extras ---
-    st.markdown("---")
-    st.header("🧘 Thiền & Tài nguyên")
-    st.write("Video thiền gợi ý:")
-    st.video(MEDITATION_VIDEO)
-    if st.button("Quote of the day"):
-        st.info(random.choice(QUOTES))
+    # st.markdown("---")
+    # st.header("🧘 Thiền & Tài nguyên")
+    # st.write("Video thiền gợi ý:")
+    # st.video(MEDITATION_VIDEO)
+    # if st.button("Quote of the day"):
+    #     st.info(random.choice(QUOTES))
 
     # --- History & progress ---
     st.markdown("---")
