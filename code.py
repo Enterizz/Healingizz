@@ -605,7 +605,7 @@ def main():
                             st.session_state["global_lock"] = False   # 🔑 unlock khi dừng
                             st.rerun()
                         else:
-                            ui_breathing(rounds=4)
+                            ui_breathing(rounds=2)
                             # Ghi hoàn thành bằng mark_quest_completed (tránh double-point)
                             mark_quest_completed(data, q, {"completed": True})
                             update_streak_on_checkin(data)
@@ -796,4 +796,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
