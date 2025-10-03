@@ -251,7 +251,7 @@ def mood_emoji(score: int):
 if "global_lock" not in st.session_state:
     st.session_state["global_lock"] = False
 
-def ui_breathing(rounds=4):
+def ui_breathing(rounds=2):
     phases = [("Hít vào", 4), ("Nín thở", 7), ("Thở ra", 8)]
 
     round_info = st.empty()
@@ -796,3 +796,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
