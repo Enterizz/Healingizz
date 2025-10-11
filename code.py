@@ -436,15 +436,14 @@ def main():
 
     st.markdown("---")
     st.caption(
-        """
         **Hiện ứng dụng vẫn đang trong giai đoạn thử nghiệm.
         Một số tính năng còn hạn chế và có thể xuất hiện lỗi.
         Các bản cập nhật tiếp theo đang được phát triển để nâng cao trải nghiệm người dùng.
-        Cảm ơn bạn đã thông cảm và đồng hành 💚**
-        """
+        Cảm ơn bạn đã thông cảm và đồng hành**
     )
 
-    # --- login ---
+
+    st.markdown("---")
     st.markdown("#### Đăng nhập")
 
     col1, col2 = st.columns([4, 1])
@@ -806,6 +805,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
