@@ -1,0 +1,4 @@
+.env
+healing_data/
+*.pyc
+__pycache__/
