@@ -437,8 +437,10 @@ def main():
     st.markdown("---")
     st.caption(
         """
-        **LƯU Ý:** Ứng dụng chỉ mang tính hỗ trợ. Không thay thế cho chẩn đoán hoặc điều trị chuyên môn.  
-        Nếu bạn gặp khủng hoảng, hãy tìm sự giúp đỡ từ chuyên gia y tế hoặc cơ sở hỗ trợ.
+        **Hiện ứng dụng vẫn đang trong giai đoạn thử nghiệm.
+        Một số tính năng còn hạn chế và có thể xuất hiện lỗi.
+        Các bản cập nhật tiếp theo đang được phát triển để nâng cao trải nghiệm người dùng.
+        Cảm ơn bạn đã thông cảm và đồng hành 💚**
         """
     )
 
@@ -804,6 +806,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
