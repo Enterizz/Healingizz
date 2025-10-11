@@ -432,7 +432,15 @@ def cleanup_past_reminders(data: dict):
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
     st.title(APP_TITLE)
-    st.caption("Biến các bài tập chữa lành thành nhiệm vụ thú vị mỗi ngày.")
+    st.caption("Một không gian nhỏ để bạn chậm lại và lắng nghe chính mình.")
+
+    st.markdown("---")
+    st.caption(
+        """
+        **LƯU Ý:** Ứng dụng chỉ mang tính hỗ trợ. Không thay thế cho chẩn đoán hoặc điều trị chuyên môn.  
+        Nếu bạn gặp khủng hoảng, hãy tìm sự giúp đỡ từ chuyên gia y tế hoặc cơ sở hỗ trợ.
+        """
+    )
 
     # --- login ---
     st.markdown("#### Đăng nhập")
@@ -796,5 +804,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
