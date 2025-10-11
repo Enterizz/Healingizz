@@ -436,14 +436,15 @@ def main():
 
     st.markdown("---")
     st.caption(
-        **Hiện ứng dụng vẫn đang trong giai đoạn thử nghiệm.
-        Một số tính năng còn hạn chế và có thể xuất hiện lỗi.
-        Các bản cập nhật tiếp theo đang được phát triển để nâng cao trải nghiệm người dùng.
-        Cảm ơn bạn đã thông cảm và đồng hành**
+        "🌿 **Ứng dụng vẫn đang trong giai đoạn thử nghiệm.** "
+        "Một số tính năng còn hạn chế và có thể xuất hiện lỗi. "
+        "Các bản cập nhật đang được phát triển để cải thiện trải nghiệm. "
+        "Cảm ơn bạn đã thông cảm và đồng hành 💚"
     )
 
-
     st.markdown("---")
+
+    # --- login ---
     st.markdown("#### Đăng nhập")
 
     col1, col2 = st.columns([4, 1])
@@ -710,7 +711,7 @@ def main():
             b = txt.encode("utf-8")
             st.download_button("Tải nhật ký (.txt)", data=b, file_name=f"{user_id}_journal.txt", mime="text/plain")
         else:
-            st.caption("Không có gì để xuất.")
+            st.caption("Chưa có nhật ký nào.")
 
     # --- Reminders ---
     st.markdown("---")
