@@ -1,5 +1,6 @@
 streamlit
-pandas
-altair
-supabase
-python-dotenv
+streamlit-autorefresh
+pymongo[srv]
+bcrypt
+certifi
+python-dateutil
