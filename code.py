@@ -252,13 +252,13 @@ def show_login_header():
     footer {visibility: hidden;}
     .block-container {padding-top: 0 !important;}
     .center-header { text-align:center; margin-top:40px; margin-bottom:30px; }
-    .center-header h1 { font-size:36px; font-weight:800; color:#eaf4ee; margin-bottom:6px; }
-    .center-header p  { font-size:15px; color:#9ca3af; margin:0; }
+    .center-header h1 { font-size:36px; font-weight:800; color:#2C3E2B; margin-bottom:6px; }
+    .center-header p  { font-size:15px; color:#2C3E2B; margin:0; }
     </style>
     """, unsafe_allow_html=True)
     st.markdown(f"""
     <div class="center-header">
-        <h1>🌱 Healingizz <span style="font-weight:400; color:#FFFFFF;">(Beta 2.1.0)</span></h1>
+        <h1>🌱 Healingizz <span style="font-weight:400; color:##2C3E2B;">(Beta 2.1.0)</span></h1>
         <p>{APP_TAGLINE}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -1032,22 +1032,52 @@ def main():
         [data-testid="stSidebar"] { z-index: 0 !important; }
         #healing-loader { z-index: 2147483647 !important; }
         </style>
+
         <div id="healing-loader"> ... </div>
+
         <style>
         #healing-loader {
-            position: fixed; inset: 0; background: rgba(10, 25, 20, 1);
-            z-index: 9999; display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            font-family: 'Segoe UI', sans-serif; color: #FFFFFF;
-            text-align: center; opacity: 1; animation: healFade 1s ease forwards;
-            animation-delay: 1s; pointer-events: all;
+            position: fixed;
+            inset: 0;
+            background: #E2F1E1;  /* nền xanh cốm nhạt */
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', sans-serif;
+            color: #2C3E2B;       /* chữ xanh lá đậm tự nhiên */
+            text-align: center;
+            opacity: 1;
+            animation: healFade 1s ease forwards;
+            animation-delay: 1s;
+            pointer-events: all;
         }
-        #healing-loader h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .spinner { border: 4px solid rgba(255,255,255,0.2); border-top: 4px solid #FFFFFF;
-            border-radius: 100%; width: 48px; height: 48px; animation: spin 1s linear infinite; margin-top: 1rem; }
-        @keyframes spin { from {transform: rotate(0)} to {transform: rotate(360deg)} }
-        @keyframes healFade { 0%{opacity:1;visibility:visible} 99%{opacity:0;visibility:visible} 100%{opacity:0;visibility:hidden;pointer-events:none} }
+        #healing-loader h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        .spinner {
+            border: 4px solid rgba(44,62,43,0.2); /* viền mờ xanh đậm */
+            border-top: 4px solid #91C788;        /* viền xoay xanh cốm */
+            border-radius: 100%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin-top: 1rem;
+        }
+        @keyframes spin {
+            from { transform: rotate(0); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes healFade {
+            0% { opacity: 1; visibility: visible; }
+            99% { opacity: 0; visibility: visible; }
+            100% { opacity: 0; visibility: hidden; pointer-events: none; }
+        }
         </style>
+
         <div id="healing-loader">
         <h1>🌿 Đang đăng nhập vào Healingizz</h1>
         <div class="spinner"></div>
@@ -1090,10 +1120,10 @@ def main():
 
     st.markdown(
         f"""
-        <div style='background: linear-gradient(120deg, #1e352d, #203730);
-                    padding: 2rem; border-radius: 16px; text-align: center;
-                    font-size: 1.25rem; font-style: italic; color: #e8f6ec;
-                    box-shadow: 0 0 20px rgba(0,0,0,0.2);'>
+        <div style='background: linear-gradient(120deg,#A8D5BA,#91C788);
+            padding:2rem;border-radius:16px;text-align:center;
+            font-size:1.25rem;font-style:italic;color:#2C3E2B;
+            box-shadow:0 0 20px rgba(145,199,136,.3);'>
         💬 “{st.session_state["daily_quote"]}”
         </div>
         """,
