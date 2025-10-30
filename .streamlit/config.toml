@@ -1,7 +1,7 @@
 [theme]
-primaryColor="#66BB6A"
-backgroundColor="#0D1A15"          
-secondaryBackgroundColor="#15241F"  
-textColor="#E0F2E9"      
+primaryColor = "#91C788"   
+backgroundColor = "#F8FFF4"  
+secondaryBackgroundColor = "#E2F1E1"
+textColor = "#2C3E2B"      
 font = "Segoe UI"
 
