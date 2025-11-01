@@ -629,7 +629,7 @@ def breathing_478_stateful(qid: str, rounds: int = 2):
         return
 
 AUDIO_ASSET_DIR = Path("assets")
-MINDFUL_30S_FILE = AUDIO_ASSET_DIR / "mindful_30s.mp3"
+MINDFUL_30S_FILE = AUDIO_ASSET_DIR / "mindful_30s.MP3"
 
 @st.cache_data(show_spinner=False)
 def _load_audio_base64(path: Path) -> str | None:
@@ -1234,3 +1234,4 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
