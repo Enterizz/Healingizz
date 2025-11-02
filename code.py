@@ -16,15 +16,19 @@ import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_autorefresh import st_autorefresh
 
+
+# ====== Third-party for Mongo Auth ======
 try:
     import bcrypt
 except Exception:
     bcrypt = None
 
+# ====== App config ======
 APP_TITLE = "🌱 Healingizz (Beta 2.1.0)"
 APP_TAGLINE = "Một không gian nhỏ để bạn chậm lại và lắng nghe chính mình."
 DATA_DIR = Path("healing_data"); DATA_DIR.mkdir(exist_ok=True)
 
+# ---------------- UI Lock helpers ----------------
 def _lock_ui(on: bool = True):
     st.session_state["_ui_locked"] = bool(on)
 
@@ -39,6 +43,7 @@ def _sync_ui_lock_with_timers():
     )
     _lock_ui(running)
 
+# ---------------- Local storage (always-on) ----------------
 def user_file(local_key: str) -> Path:
     return DATA_DIR / f"{local_key}.json"
 
@@ -80,6 +85,9 @@ def _load_local(local_key: str, nickname_hint: str = ""):
     data = init_user_state(local_key, nickname_hint)
     _save_local(data); return data
 
+# =====================================================
+# 🧠 MongoDB Cloud Integration (Atlas)
+# =====================================================
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import PyMongoError
 
@@ -87,7 +95,7 @@ from pymongo.errors import PyMongoError
 def get_mongo_client() -> MongoClient:
     """Tạo client MongoDB Atlas từ [mongo] trong .streamlit/secrets.toml"""
     import certifi
-    mongo = st.secrets["mongo"]  
+    mongo = st.secrets["mongo"]  # 🔹 Lấy section [mongo]
     uri = mongo["uri"]
 
     try:
@@ -102,7 +110,7 @@ def get_mongo_client() -> MongoClient:
             retryReads=True,
             appname="healingizz",
         )
-        client.admin.command("ping")  
+        client.admin.command("ping")  # test ping
         return client
     except Exception as e:
         st.error(
@@ -111,7 +119,7 @@ def get_mongo_client() -> MongoClient:
             "Gợi ý: kiểm tra URI, mở IP whitelist hoặc cập nhật certifi/pymongo."
         )
         raise
-
+    
 def _mongo_col_data():
     client = get_mongo_client()
     mongo = st.secrets["mongo"]
@@ -131,6 +139,7 @@ def _mongo_col_auth():
         pass
     return col
 
+# --------- Cloud CRUD for user data ----------
 def _cloud_upsert_mongo(user_id: str, data: dict):
     try:
         col = _mongo_col_data()
@@ -155,6 +164,7 @@ def _cloud_load_mongo(user_id: str) -> Optional[dict]:
         st.warning(f"⚠️ Không tải được từ cloud Mongo: {e}")
         return None
 
+# --------- Auth on Mongo (username/password) ----------
 def _username_exists_mongo(username: str) -> bool:
     try:
         col = _mongo_col_auth()
@@ -179,7 +189,7 @@ def _create_user_mongo(username: str, password: str):
         "pass_hash": pass_hash,
         "created_at": datetime.utcnow().isoformat()
     })
-
+    # user_id = string of inserted id
     return str(res.inserted_id)
 
 def _login_user_mongo(username: str, password: str):
@@ -192,8 +202,9 @@ def _login_user_mongo(username: str, password: str):
     ok = bcrypt.checkpw(password.encode("utf-8"), row["pass_hash"].encode("utf-8"))
     if not ok:
         return None, "Sai username hoặc password."
-    return str(row["_id"]), None  
+    return str(row["_id"]), None  # dùng _id làm auth_user_id
 
+# --------- High-level user state load/save ----------
 def load_user_cloud_or_local(auth_user_id: str, nickname_hint: str = "") -> dict:
     """
     Có auth_user_id → ưu tiên Mongo; nếu chưa có → dùng local & sync lên.
@@ -204,7 +215,7 @@ def load_user_cloud_or_local(auth_user_id: str, nickname_hint: str = "") -> dict
             if nickname_hint and not cloud_data.get("profile", {}).get("nickname"):
                 cloud_data.setdefault("profile", {})["nickname"] = nickname_hint
             return cloud_data
-
+        # Không có trên cloud → lấy local rồi đẩy lên
         local_key = (f"user-{nickname_hint.strip().lower().replace(' ', '_')}"
                      if nickname_hint else f"user-local-{auth_user_id}")
         local_data = _load_local(local_key, nickname_hint)
@@ -233,6 +244,7 @@ def save_user(data: dict):
         except Exception as e:
             st.warning(f"⚠️ Lưu cloud chậm, đã lưu local: {e}")
 
+# ====== UI: Login header (center) ======
 def show_login_header():
     st.markdown("""
     <style>
@@ -240,8 +252,8 @@ def show_login_header():
     footer {visibility: hidden;}
     .block-container {padding-top: 0 !important;}
     .center-header { text-align:center; margin-top:40px; margin-bottom:30px; }
-    .center-header h1 { font-size:36px; font-weight:800; color:
-    .center-header p  { font-size:15px; color:
+    .center-header h1 { font-size:36px; font-weight:800; color:#2C3E2B; margin-bottom:6px; }
+    .center-header p  { font-size:15px; color:#2C3E2B; margin:0; }
     </style>
     """, unsafe_allow_html=True)
     st.markdown(f"""
@@ -292,6 +304,7 @@ def auth_block():
                         except Exception as e:
                             st.error(f"Tạo tài khoản thất bại: {e}")
 
+# ====== Achievement Toasts (robust) ======
 def _hz_now_ms():
     import time as _time
     return int(_time.time() * 1000)
@@ -299,7 +312,7 @@ def _hz_now_ms():
 def _hz_notifier_init():
     if "_hz_toasts" not in st.session_state:
         st.session_state["_hz_toasts"] = []
-
+    # dọn item hết hạn
     now = _hz_now_ms()
     st.session_state["_hz_toasts"] = [
         t for t in st.session_state["_hz_toasts"]
@@ -336,7 +349,7 @@ def notify_achievement(title: str,
     _html = """
     <style>
       .hz_toast_wrap{position:fixed;top:18px;right:18px;z-index:2147483647;display:flex;flex-direction:column;gap:12px;pointer-events:none}
-      .hz_toast{min-width:320px;max-width:460px;background:linear-gradient(135deg,rgba(28,45,38,.98),rgba(36,61,52,.98));color:
+      .hz_toast{min-width:320px;max-width:460px;background:linear-gradient(135deg,rgba(28,45,38,.98),rgba(36,61,52,.98));color:#eafff0;border-radius:14px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.35),0 0 0 2px rgba(96,190,140,.25) inset;transform:translateX(24px);opacity:0;pointer-events:auto}
       .hz_icon{font-size:20px;line-height:1.1;filter:drop-shadow(0 0 4px rgba(180,255,220,.5))}
       .hz_text{display:flex;flex-direction:column;line-height:1.2}
       .hz_title{font-weight:800;font-size:15px}
@@ -397,7 +410,7 @@ def render_notifier():
     html = """
     <style>
       .hz_toast_wrap{position:fixed;top:18px;right:18px;z-index:2147483647;display:flex;flex-direction:column;gap:12px;pointer-events:none}
-      .hz_toast{min-width:320px;max-width:460px;background:linear-gradient(135deg,rgba(28,45,38,.98),rgba(36,61,52,.98));color:
+      .hz_toast{min-width:320px;max-width:460px;background:linear-gradient(135deg,rgba(28,45,38,.98),rgba(36,61,52,.98));color:#eafff0;border-radius:14px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.35),0 0 0 2px rgba(96,190,140,.25) inset;transform:translateX(24px);opacity:0;pointer-events:auto}
       .hz_icon{font-size:20px;line-height:1.1;filter:drop-shadow(0 0 4px rgba(180,255,220,.5))}
       .hz_text{display:flex;flex-direction:column;line-height:1.2}
       .hz_title{font-weight:800;font-size:15px}
@@ -445,6 +458,7 @@ def render_notifier():
     """
     components.html(html.replace("__PAYLOAD__", payload), height=1)
 
+# ====== Streak + badges ======
 def update_streak_on_checkin(data: dict):
     today = date.today()
     last = data["game"]["last_checkin_date"]
@@ -519,6 +533,7 @@ def check_badges(data: dict, *, set_all_done_today: bool = False):
             notify_achievement(title=title, subtitle=sub, icon="🏅", delay_ms=i*350)
     return True
 
+# ====== Quests ======
 QUEST_TEMPLATES = [
     {"type": "breathing","title": "Thở 4-7-8","desc": "Thở vào 4s – nín 7s – thở ra 8s. Lặp lại trong hai vòng.","duration_sec": 60},
     {"type": "gratitude","title": "Điều ý nghĩa hôm nay","desc": "Viết 1 điều mà bạn cảm thấy có ý nghĩa trong ngày hôm nay"},
@@ -561,6 +576,7 @@ def mark_quest_completed(data: dict, quest: dict, payload: dict) -> bool:
 def is_quest_done(data: dict, quest_id: str) -> bool:
     return quest_id in data["game"]["quests"]
 
+# ====== Timers (stateful + lock UI) ======
 def _start_timer_state(qid: str, total_sec: int, prefix: str):
     st.session_state[f"{prefix}_{qid}_state"] = "running"
     now = _t.time()
@@ -590,6 +606,7 @@ def breathing_478_stateful(qid: str, rounds: int = 2):
 
     c1, _ = st.columns([3, 7])
 
+    # --- Idle
     if state == "idle":
         if c1.button("Bắt đầu thực hiện", key=f"{qid}_start", disabled=is_ui_locked()):
             st.session_state[key_state] = "running"
@@ -597,6 +614,7 @@ def breathing_478_stateful(qid: str, rounds: int = 2):
             st.rerun()
         return
 
+    # --- Running
     if state == "running":
         if c1.button("Dừng thực hiện", key=f"{qid}_stop"):
             st.session_state[key_state] = "idle"
@@ -610,7 +628,7 @@ def breathing_478_stateful(qid: str, rounds: int = 2):
         for r in range(1, rounds + 1):
             round_info.markdown(f"Vòng {r}/{rounds}")
             for label, sec in phases:
-
+                # nếu user vừa nhấn Stop rồi rerun thì state sẽ khác; nhưng trong 1 run thì không thể stop giữa chừng – giữ nguyên hành vi cũ
                 for s in range(sec, 0, -1):
                     status.markdown(f"### {label} {s}s")
                     time.sleep(1)
@@ -618,16 +636,19 @@ def breathing_478_stateful(qid: str, rounds: int = 2):
         status.empty()
         round_info.empty()
 
+        # Kết thúc bài tập: set 'done' để main chấm điểm, mở khóa và rerun
         st.session_state[key_state] = "done"
         _lock_ui(False)
         st.rerun()
         return
 
+    # --- Done
     if state == "done":
         st.success("✅ Hoàn thành thở 4-7-8 🎉")
         _lock_ui(False)
         return
 
+# ====== Mindful 30s audio ======
 AUDIO_ASSET_DIR = Path("assets")
 MINDFUL_30S_FILE = AUDIO_ASSET_DIR / "mindful_30s.MP3"
 
@@ -666,10 +687,10 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
         return
 
     if state == "running":
-
+        # Render audio đúng 1 lần, không autoplay lại
         audio_b64 = _load_audio_base64(MINDFUL_30S_FILE)
         if audio_b64:
-
+            # autoplay vì user vừa bấm "Bắt đầu", thường được phép
             components.html(f"""
                 <audio id="mindful_{qid}" autoplay>
                     <source src="{audio_b64}" type="audio/mpeg">
@@ -678,7 +699,7 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
                     try {{
                       const a = document.getElementById("mindful_{qid}");
                       if (a) {{
-                        a.volume = 0.7;   
+                        a.volume = 0.7;   // chỉnh âm lượng
                         a.play().catch(()=>{{}});
                       }}
                     }} catch(e) {{}}
@@ -687,12 +708,14 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
         else:
             st.info("Không tìm thấy assets/mindful_30s.mp3 – vẫn tiếp tục đếm 30 giây.")
 
+        # Đếm ngược ngay trong một vòng lặp (không autorefresh)
         target = int(st.session_state.get(f"tm_{qid}_target_sec", total_sec))
         for sec in range(target, 0, -1):
             status.markdown(f"Thời gian còn lại: **{sec} giây**")
-
+            # note.caption("Nhắm mắt, chú ý cảm giác…")
             time.sleep(1)
 
+        # Kết thúc
         status.empty(); note.empty()
         st.session_state[key_state] = "done"
         st.session_state.pop("active_quest_id", None)
@@ -704,6 +727,7 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
         st.success("✅ Hoàn thành 🎉")
         return
 
+# ====== Garden (2 loại cây: 98%/2%) ======
 MAX_TREES_PER_DAY = 5
 TREE_ASSET_DIR = Path("assets")
 PROB_RARE = 0.02
@@ -765,6 +789,7 @@ def _get_current_day_for_ui(key="garden_day_page") -> str:
 
 def _goto_day(day_iso: str, key="garden_day_page"):
     st.session_state[key] = day_iso
+    # Button click tự rerun rồi, không cần gọi st.rerun()
 
 def render_garden_day_ui(data: dict, allow_planting: bool=True):
     garden = data["game"].get("garden", [])
@@ -778,6 +803,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
     idx = days_sorted.index(cur_day)
     has_prev = idx > 0; has_next = idx < len(days_sorted) - 1
 
+    # Nav
     col_left, col_mid, col_right = st.columns([1,2.5,1], gap="small")
     with col_left:
         if st.button("◀ Ngày trước", disabled=not has_prev, key="garden_prev"):
@@ -793,6 +819,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
     todays_plants = list(grouped.get(cur_day, []))
     left_slots = max(0, MAX_TREES_PER_DAY - len(todays_plants))
 
+    # CSS grid
     st.markdown("""
     <style>
     .day-grid-fixed{ display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-top:12px; }
@@ -805,7 +832,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
     .slot .cap{ font-size:13px; opacity:.9; margin-top:8px; line-height:1.3; max-width:100%;
                 white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-style:italic; }
     .slot-empty{ opacity:.5; font-style:italic }
-    .slot.rare{ border-color:
+    .slot.rare{ border-color:#FFD54A; box-shadow:0 0 14px rgba(255,213,74,.45), inset 0 0 2px rgba(255,213,74,.85); }
     .slot.sparkle{ animation: glowPulse 1.2s ease-in-out infinite alternate; }
     @keyframes glowPulse{ 0%{box-shadow:0 0 12px rgba(255,215,64,.35)} 100%{box-shadow:0 0 22px rgba(255,215,64,.7)} }
     .slot.sparkle::before{ content:""; position:absolute; inset:-3px; border-radius:14px; pointer-events:none;
@@ -816,7 +843,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
     .slot[data-tip]:hover::after{
       content: attr(data-tip);
       position:absolute; bottom:100%; left:50%; transform:translate(-50%,-10px);
-      background:rgba(20,30,25,.95); color:
+      background:rgba(20,30,25,.95); color:#eaf4ee; border:1px solid rgba(255,255,255,.12);
       box-shadow:0 6px 16px rgba(0,0,0,.35); padding:10px 12px; border-radius:10px;
       width:max-content; max-width:260px; text-align:left; font-size:13px; line-height:1.35;
       opacity:1; z-index:9999; white-space: pre-line;
@@ -825,6 +852,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
     </style>
     """, unsafe_allow_html=True)
 
+    # Render plants
     display_plants = todays_plants[:MAX_TREES_PER_DAY]
     left_slots = MAX_TREES_PER_DAY - len(display_plants)
     now_utc = datetime.utcnow()
@@ -864,6 +892,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
 
     st.markdown('<div class="day-grid-fixed">' + "".join(cards_html) + "</div>", unsafe_allow_html=True)
 
+    # Plant form (only if today, free slots, allowed, not locked)
     is_today_page = (cur_day == datetime.utcnow().date().isoformat())
     if not is_today_page:
         st.info("Đây là ngày khác. Chỉ gieo ở **hôm nay**."); return
@@ -876,7 +905,7 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
 
     aff = st.text_input("Điều tích cực để gieo hôm nay", key="affirm_today_v2",
                         placeholder="Gieo điều tích cực, Cơ hội 2% gặp cây hiếm")
-
+    # st.info("Cơ hội 2% xuất hiện cây hiếm khi gieo.")
     if st.button("Gieo cây 🌱", key="plant_today_btn"):
         if not aff.strip():
             st.error("Hãy viết một điều tích cực trước khi gieo.")
@@ -898,10 +927,11 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
             save_user(data)
             st.rerun()
 
+# ====== Sidebar ======
 st.markdown("""
 <style>
 .logout-wrap .stButton > button{
-  background:
+  background:#ef4444 !important; border-color:#ef4444 !important; color:white !important;
   font-weight:700; width:100%;
 }
 .logout-wrap .stButton > button:hover{ filter: brightness(0.95); }
@@ -942,6 +972,18 @@ def ui_sidebar(data: dict):
     else:
         st.sidebar.write("Chưa có huy hiệu nào.")
 
+    # Nút đồng bộ cloud theo yêu cầu (không auto fetch mỗi rerun)
+    # if st.session_state.get("auth_user_id"):
+    #     if st.sidebar.button("↻ Đồng bộ lại từ cloud (Mongo)", disabled=is_ui_locked()):
+    #         fresh = _cloud_load_mongo(st.session_state.get("auth_user_id"))
+    #         if fresh:
+    #             st.session_state["user_data"] = fresh
+    #             save_user(st.session_state["user_data"])
+    #             st.success("Đã tải lại dữ liệu.")
+    #             st.rerun()
+    #         else:
+    #             st.info("Không có dữ liệu mới trên cloud.")
+
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Tài khoản**")
     st.sidebar.markdown('<div class="logout-wrap">', unsafe_allow_html=True)
@@ -951,6 +993,7 @@ def ui_sidebar(data: dict):
         st.success("Đã đăng xuất."); st.rerun()
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
+# ====== Misc ======
 def mood_emoji(score: int):
     if score <= 2: return "😢"
     if score <= 4: return "😟"
@@ -977,6 +1020,7 @@ def export_journal_to_txt(data: dict):
         lines.append(entry.get("content","")); lines.append("\n")
     return "\n".join(lines)
 
+# ====== Main ======
 def main():
     st.set_page_config(page_title=APP_TITLE, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
     _sync_ui_lock_with_timers()
@@ -986,37 +1030,37 @@ def main():
         st.markdown("""
         <style>
         [data-testid="stSidebar"] { z-index: 0 !important; }
-
+        #healing-loader { z-index: 2147483647 !important; }
         </style>
 
         <div id="healing-loader"> ... </div>
 
         <style>
-
+        #healing-loader {
             position: fixed;
             inset: 0;
-            background: 
+            background: #E2F1E1;  /* nền xanh cốm nhạt */
             z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', sans-serif;
-            color: 
+            color: #2C3E2B;       /* chữ xanh lá đậm tự nhiên */
             text-align: center;
             opacity: 1;
             animation: healFade 1s ease forwards;
             animation-delay: 1s;
             pointer-events: all;
         }
-
+        #healing-loader h1 {
             font-size: 1.8rem;
             font-weight: 700;
             margin-bottom: 0.75rem;
         }
         .spinner {
-            border: 4px solid rgba(44,62,43,0.2); 
-            border-top: 4px solid 
+            border: 4px solid rgba(44,62,43,0.2); /* viền mờ xanh đậm */
+            border-top: 4px solid #91C788;        /* viền xoay xanh cốm */
             border-radius: 100%;
             width: 48px;
             height: 48px;
@@ -1040,14 +1084,17 @@ def main():
         </div>
         """, unsafe_allow_html=True)
 
+    # Gate
     if "auth_user_id" not in st.session_state and "username" not in st.session_state:
         show_login_header(); auth_block(); st.stop()
 
+    # Title
     st.title(APP_TITLE); st.caption(APP_TAGLINE)
 
     auth_user_id = st.session_state.get("auth_user_id")
     nickname_hint = st.session_state.get("nickname", st.session_state.get("username", "guest"))
 
+    # chỉ load user 1 lần/phiên — giảm lag
     with st.spinner("Đang tải dữ liệu người dùng..."):
         if "user_data" not in st.session_state:
             st.session_state["user_data"] = load_user_cloud_or_local(auth_user_id or "", nickname_hint)
@@ -1075,7 +1122,7 @@ def main():
         f"""
         <div style='background: linear-gradient(120deg,#A8D5BA,#91C788);
             padding:2rem;border-radius:16px;text-align:center;
-            font-size:1.25rem;font-style:italic;color:
+            font-size:1.25rem;font-style:italic;color:#2C3E2B;
             box-shadow:0 0 20px rgba(145,199,136,.3);'>
         💬 “{st.session_state["daily_quote"]}”
         </div>
@@ -1084,6 +1131,7 @@ def main():
     )
     st.caption("Một lời nhắc nhỏ — chỉ cần hít sâu và mỉm cười, bạn đã đủ rồi.")
 
+    # Check-in
     st.markdown("---")
     today = datetime.utcnow().date()
     done_today = any(datetime.fromisoformat(m["date"]).date() == today for m in data["game"].get("moods", []))
@@ -1099,6 +1147,7 @@ def main():
             check_badges(data)
             st.rerun()
 
+    # Daily quests
     st.markdown("---")
     st.header("🎯 Hoạt động hôm nay")
     seed_id = (st.session_state.get("auth_user_id") or st.session_state.get("username") or "guest")
@@ -1156,10 +1205,12 @@ def main():
                 data["game"].setdefault("badges", []).append(badge)
                 save_user(data)
 
+    # Garden
     st.markdown("---")
     st.header("🌻 Khu vườn tích cực của bạn")
     render_garden_day_ui(data, allow_planting=(all_completed and not is_ui_locked()))
 
+    # Journal
     st.markdown("---")
     st.header("📔 Nhật ký")
     colj1, colj2 = st.columns([2,1])
@@ -1196,6 +1247,7 @@ def main():
         else:
             st.caption("Chưa ghi nhận nhật ký nào")
 
+    # History
     st.markdown("---")
     st.header("📊 Lịch sử & tiến trình")
     colh1, colh2 = st.columns([2,1])
@@ -1234,4 +1286,3 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
-
