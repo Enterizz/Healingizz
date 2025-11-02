@@ -537,7 +537,7 @@ def check_badges(data: dict, *, set_all_done_today: bool = False):
 QUEST_TEMPLATES = [
     {"type": "breathing","title": "Thở 4-7-8","desc": "Thở vào 4s – nín 7s – thở ra 8s. Lặp lại trong hai vòng.","duration_sec": 60},
     {"type": "gratitude","title": "Điều ý nghĩa hôm nay","desc": "Viết 1 điều mà bạn cảm thấy có ý nghĩa trong ngày hôm nay"},
-    {"type": "mini_mindful","title": "Nhắm mắt thở 30s","desc": "Nhắm mắt, chú ý cảm giác 30 giây. Không dùng điện thoại.","duration_sec": 30},
+    {"type": "mini_mindful","title": "Nhắm mắt thở 30s","desc": "Nhắm mắt, nghe nhạc và chú ý cảm giác trong 30 giây","duration_sec": 30},
 ]
 
 def todays_seed(user_id: str):
@@ -1286,3 +1286,4 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
