@@ -730,7 +730,7 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
 # ====== Garden (2 loại cây: 98%/2%) ======
 MAX_TREES_PER_DAY = 5
 TREE_ASSET_DIR = Path("assets")
-PROB_RARE = 0.02
+PROB_RARE = 0.15
 NORMAL_FILES = ["tree_normal.png", "tree1.png"]
 RARE_FILES   = ["tree_rare.png", "tree6.png"]
 
@@ -1286,4 +1286,5 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
