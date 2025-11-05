@@ -730,7 +730,7 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
 # ====== Garden (2 loại cây: 98%/2%) ======
 MAX_TREES_PER_DAY = 5
 TREE_ASSET_DIR = Path("assets")
-PROB_RARE = 0.15
+PROB_RARE = 0.10
 NORMAL_FILES = ["tree_normal.png", "tree1.png"]
 RARE_FILES   = ["tree_rare.png", "tree6.png"]
 
@@ -904,8 +904,8 @@ def render_garden_day_ui(data: dict, allow_planting: bool=True):
         st.info("⏳ Đang thực hiện bài tập — gieo cây tạm khóa."); return
 
     aff = st.text_input("Điều tích cực để gieo hôm nay", key="affirm_today_v2",
-                        placeholder="Gieo điều tích cực, Cơ hội 2% gặp cây hiếm")
-    # st.info("Cơ hội 2% xuất hiện cây hiếm khi gieo.")
+                        placeholder="Gieo điều tích cực, Cơ hội 10% gặp cây hiếm")
+    # st.info("Cơ hội 10% xuất hiện cây hiếm khi gieo.")
     if st.button("Gieo cây 🌱", key="plant_today_btn"):
         if not aff.strip():
             st.error("Hãy viết một điều tích cực trước khi gieo.")
@@ -1286,5 +1286,6 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
 
