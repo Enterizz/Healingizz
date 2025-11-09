@@ -25,7 +25,7 @@ except Exception:
 
 # ====== App config ======
 APP_TITLE = "🌱 Healingizz 2.1.0"
-APP_TAGLINE = "Một không gian nhỏ để bạn chậm lại và lắng nghe chính mình."
+APP_TAGLINE = "Hỗ trợ cân bằng tâm lý học sinh"
 DATA_DIR = Path("healing_data"); DATA_DIR.mkdir(exist_ok=True)
 
 # ---------------- UI Lock helpers ----------------
@@ -1286,6 +1286,7 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
 
 
