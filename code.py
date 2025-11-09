@@ -24,7 +24,7 @@ except Exception:
     bcrypt = None
 
 # ====== App config ======
-APP_TITLE = "🌱 Healingizz (Beta 2.1.0)"
+APP_TITLE = "🌱 Healingizz 2.1.0"
 APP_TAGLINE = "Một không gian nhỏ để bạn chậm lại và lắng nghe chính mình."
 DATA_DIR = Path("healing_data"); DATA_DIR.mkdir(exist_ok=True)
 
@@ -258,7 +258,7 @@ def show_login_header():
     """, unsafe_allow_html=True)
     st.markdown(f"""
     <div class="center-header">
-        <h1>🌱 Healingizz <span style="font-weight:400; color:##2C3E2B;">(Beta 2.1.0)</span></h1>
+        <h1>🌱 Healingizz <span style="font-weight:400; color:##2C3E2B;">2.1.0</span></h1>
         <p>{APP_TAGLINE}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -1286,6 +1286,7 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
 
 
