@@ -322,10 +322,15 @@ def _hz_notifier_init():
 def notify_achievement(title: str,
                        subtitle: str = "Đã mở khóa!",
                        icon: str = "🏅",
-                       delay_ms: int = 0,
-                       duration_ms: int = 7000):
-    _hz_notifier_init()
+                       delay_ms: int = 0):
+    # Tổng 5s: 1s vào + 3s giữ + 1s ra
+    duration_ms = 5000
+
+    if "_hz_toasts" not in st.session_state:
+        st.session_state["_hz_toasts"] = []
     now = _hz_now_ms()
+
+    # Chống trùng trong 10s
     for t in st.session_state["_hz_toasts"]:
         if t["title"] == title and t["subtitle"] == subtitle and (now - t["start_ms"]) < 10000:
             return
@@ -336,127 +341,82 @@ def notify_achievement(title: str,
         "subtitle": subtitle,
         "icon": icon,
         "start_ms": now + max(0, int(delay_ms)),
-        "duration_ms": max(1500, int(duration_ms)),
+        "duration_ms": max(3000, int(duration_ms)),
     })
 
-    _one = {
-        "id": st.session_state["_hz_toasts"][-1]["id"],
-        "title": title, "subtitle": subtitle, "icon": icon,
-        "delay": max(0, int(delay_ms)),
-        "duration": max(1500, int(duration_ms)),
-    }
-    _payload = _json.dumps([_one], ensure_ascii=False)
-    _html = """
-    <style>
-      .hz_toast_wrap{position:fixed;top:18px;right:18px;z-index:2147483647;display:flex;flex-direction:column;gap:12px;pointer-events:none}
-      .hz_toast{min-width:320px;max-width:460px;background:linear-gradient(135deg,rgba(28,45,38,.98),rgba(36,61,52,.98));color:#eafff0;border-radius:14px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.35),0 0 0 2px rgba(96,190,140,.25) inset;transform:translateX(24px);opacity:0;pointer-events:auto}
-      .hz_icon{font-size:20px;line-height:1.1;filter:drop-shadow(0 0 4px rgba(180,255,220,.5))}
-      .hz_text{display:flex;flex-direction:column;line-height:1.2}
-      .hz_title{font-weight:800;font-size:15px}
-      .hz_sub{opacity:.95;font-size:13px;margin-top:2px}
-      @keyframes hz_fade_in{0%{opacity:0;transform:translateX(24px)}100%{opacity:1;transform:translateX(0)}}
-      @keyframes hz_fade_out{0%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(24px)}}
-    </style>
-    <div class="hz_toast_wrap" aria-live="polite"></div>
-    <script>
-    (function(){
-      const data = __PAYLOAD__;
-      const wrap = document.currentScript.previousElementSibling;
-      function spawn(item){
-        const el = document.createElement('div');
-        el.className = 'hz_toast';
-        el.innerHTML = '<div class="hz_icon">'+item.icon+'</div>'
-                     + '<div class="hz_text"><div class="hz_title">'+item.title+'</div>'
-                     + '<div class="hz_sub">'+item.subtitle+'</div></div>';
-        wrap.appendChild(el);
-        el.style.animation = 'hz_fade_in 350ms cubic-bezier(.2,.8,.2,1) forwards';
-        const fadeOutAt = 350 + Math.max(0, item.duration - 350);
-        setTimeout(function(){
-          try{ el.style.animation = 'hz_fade_out 350ms ease-in forwards'; setTimeout(function(){ el.remove(); }, 380); }catch(e){}
-        }, fadeOutAt);
-      }
-      data.forEach(function(item){ setTimeout(function(){ spawn(item); }, Math.max(0,item.delay)); });
-    })();
-    </script>
-    """
-    components.html(_html.replace("__PAYLOAD__", _payload), height=120)
-
-def render_notifier():
-    _hz_notifier_init()
-    if not st.session_state["_hz_toasts"]:
-        components.html('<div id="hz_toast_wrap" class="hz_toast_wrap"></div>' + """
-            <style>.hz_toast_wrap{position:fixed;top:18px;right:18px;z-index:2147483647;display:flex;flex-direction:column;gap:12px;pointer-events:none}</style>
-        """, height=1)
-        return
-
-    now = _hz_now_ms()
-    normalized = []
-    for t in st.session_state["_hz_toasts"]:
-        end_ms = t["start_ms"] + t["duration_ms"]
-        if now >= end_ms: continue
-        remaining_total = end_ms - now
-        remaining_delay = max(0, t["start_ms"] - now)
-        remaining_visible = max(1200, remaining_total - remaining_delay)
-        normalized.append({
-            "id": t["id"],
-            "title": t["title"],
-            "subtitle": t["subtitle"],
-            "icon": t["icon"],
-            "delay": int(remaining_delay),
-            "duration": int(remaining_visible)
-        })
-
-    payload = _json.dumps(normalized, ensure_ascii=False)
+    payload = _json.dumps([st.session_state["_hz_toasts"][-1]], ensure_ascii=False)
     html = """
     <style>
-      .hz_toast_wrap{position:fixed;top:18px;right:18px;z-index:2147483647;display:flex;flex-direction:column;gap:12px;pointer-events:none}
-      .hz_toast{min-width:320px;max-width:460px;background:linear-gradient(135deg,rgba(28,45,38,.98),rgba(36,61,52,.98));color:#eafff0;border-radius:14px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.35),0 0 0 2px rgba(96,190,140,.25) inset;transform:translateX(24px);opacity:0;pointer-events:auto}
-      .hz_icon{font-size:20px;line-height:1.1;filter:drop-shadow(0 0 4px rgba(180,255,220,.5))}
-      .hz_text{display:flex;flex-direction:column;line-height:1.2}
-      .hz_title{font-weight:800;font-size:15px}
-      .hz_sub{opacity:.95;font-size:13px;margin-top:2px}
-      @keyframes hz_fade_in{0%{opacity:0;transform:translateX(24px)}100%{opacity:1;transform:translateX(0)}}
-      @keyframes hz_fade_out{0%{opacity:1;transform:translateX(0)}100%{opacity:0;transform:translateX(24px)}}
-    </style>
-    <div id="hz_toast_wrap" class="hz_toast_wrap" aria-live="polite"></div>
-    <script>
-    (function(){
-      const data = __PAYLOAD__;
-      const wrap = document.getElementById('hz_toast_wrap');
-      if(!wrap) return;
-      function spawnToast(item){
-        const el = document.createElement('div');
-        el.className = 'hz_toast';
-        el.setAttribute('data-id', item.id);
-        el.innerHTML =
-          '<div class="hz_icon">'+ item.icon +'</div>' +
-          '<div class="hz_text">' +
-          '  <div class="hz_title">'+ item.title +'</div>' +
-          '  <div class="hz_sub">'+ item.subtitle +'</div>' +
-          '</div>';
-        wrap.appendChild(el);
-        el.style.animation = 'hz_fade_in 350ms cubic-bezier(.2,.8,.2,1) forwards';
-        const fadeOutAt = 350 + item.duration - 350;
-        setTimeout(function(){
-          try{ el.style.animation = 'hz_fade_out 350ms ease-in forwards'; setTimeout(function(){ el.remove(); }, 360); }catch(e){}
-        }, fadeOutAt);
+      @keyframes hz_in { 0%{opacity:0; transform:translateX(24px)} 100%{opacity:1; transform:translateX(0)} }
+      @keyframes hz_out{ 0%{opacity:1; transform:translateX(0)} 100%{opacity:0; transform:translateX(24px)} }
+      .hz_wrap_fixed{
+        position:fixed; top:18px; right:18px; z-index:2147483647;
+        display:flex; flex-direction:column; gap:12px; pointer-events:none;
+        font-family: 'Segoe UI', system-ui, -apple-system, 'Segoe UI Emoji', sans-serif;
       }
-      data.forEach(function(item){ setTimeout(function(){ spawnToast(item); }, Math.max(0,item.delay)); });
-      const obs = new MutationObserver(function(){
-        const current = wrap.querySelectorAll('.hz_toast');
-        if(current.length > 6){
-          for(let i=0;i<current.length-6;i++){
-            const it = current[i];
-            it.style.animation = 'hz_fade_out 250ms ease-in forwards';
-            setTimeout(function(){ it.remove(); }, 260);
-          }
+      .hz_card{
+        min-width:320px; max-width:460px; pointer-events:auto;
+        border-radius:14px; padding:12px 14px; display:flex; align-items:flex-start; gap:12px;
+        background: linear-gradient(135deg, rgba(145,199,136,.98), rgba(129,183,121,.98)); /* theo theme */
+        color:#2C3E2B;
+        border:1px solid rgba(44,62,43,.15);
+        box-shadow: 0 10px 28px rgba(0,0,0,.25), 0 0 0 2px rgba(255,255,255,.08) inset;
+        opacity:0; transform:translateX(24px);
+      }
+      .hz_icon{ font-size:20px; line-height:1.1; filter:drop-shadow(0 0 4px rgba(255,255,255,.35)) }
+      .hz_t   { display:flex; flex-direction:column; line-height:1.25 }
+      .hz_t .ttl{ font-weight:800; font-size:15px }
+      .hz_t .sub{ opacity:.95; font-size:13px; margin-top:2px }
+    </style>
+    <div id="hz_wrap_fixed"></div>
+    <script>
+      (function(){
+        const data = __PAYLOAD__;
+        let wrap = document.getElementById('hz_wrap_fixed');
+        if(!wrap){
+          wrap = document.createElement('div');
+          wrap.id = 'hz_wrap_fixed';
+          wrap.className = 'hz_wrap_fixed';
+          document.body.appendChild(wrap);
         }
-      });
-      obs.observe(wrap, {childList:true});
-    })();
+        function spawn(item){
+          const el = document.createElement('div');
+          el.className = 'hz_card';
+          el.innerHTML =
+            '<div class="hz_icon">'+item.icon+'</div>'+
+            '<div class="hz_t"><div class="ttl">'+item.title+'</div>'+
+            '<div class="sub">'+item.subtitle+'</div></div>';
+          wrap.appendChild(el);
+
+          // 1s in
+          el.style.animation = 'hz_in 1000ms cubic-bezier(.2,.8,.2,1) forwards';
+
+          // giữ 3s, sau đó 1s out
+          const hold = 3000;
+          setTimeout(function(){
+            try{
+              el.style.animation = 'hz_out 1000ms ease forwards';
+              setTimeout(function(){ el.remove(); }, 1050);
+            }catch(e){}
+          }, 1000 + hold);
+        }
+        data.forEach(function(item){ setTimeout(function(){ spawn(item); }, Math.max(0, (item.start_ms || 0) - Date.now())); });
+      })();
     </script>
     """
-    components.html(html.replace("__PAYLOAD__", payload), height=1)
+    components.html(html.replace("__PAYLOAD__", payload), height=0)
+
+def render_notifier():
+    """Chuẩn hóa lại thời gian còn lại của các toast (giữ đúng 5s)."""
+    if "_hz_toasts" not in st.session_state:
+        st.session_state["_hz_toasts"] = []
+    now = _hz_now_ms()
+    st.session_state["_hz_toasts"] = [
+        t for t in st.session_state["_hz_toasts"]
+        if now < t["start_ms"] + t["duration_ms"]
+    ]
+    # Chỉ cần 'anchor' rỗng để đảm bảo wrap hiện diện, còn spawn từng cái đã lo trong notify_achievement.
+    components.html('<div id="hz_wrap_fixed"></div>', height=0)
 
 # ====== Streak + badges ======
 def update_streak_on_checkin(data: dict):
@@ -687,6 +647,12 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
         return
 
     if state == "running":
+        if c1.button("Dừng thực hiện", key=f"{qid}_stop_btn"):
+            st.session_state[key_state] = "idle"
+            st.session_state.pop("active_quest_id", None)
+            _lock_ui(False)
+            return
+        
         # Render audio đúng 1 lần, không autoplay lại
         audio_b64 = _load_audio_base64(MINDFUL_30S_FILE)
         if audio_b64:
@@ -1286,6 +1252,7 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
 
 
