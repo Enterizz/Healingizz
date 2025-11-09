@@ -652,6 +652,7 @@ def mindful_30s_with_music(qid: str, total_sec: int = 30):
             st.session_state[key_state] = "idle"
             st.session_state.pop("active_quest_id", None)
             _lock_ui(False)
+            st.rerun()
             return
         
         # Render audio đúng 1 lần, không autoplay lại
@@ -1253,6 +1254,7 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
 
 
