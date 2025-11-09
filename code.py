@@ -576,10 +576,11 @@ def breathing_478_stateful(qid: str, rounds: int = 2):
 
     # --- Running
     if state == "running":
-        if c1.button("Dừng thực hiện", key=f"{qid}_stop"):
+        if c1.button("Dừng thực hiện", key=f"{qid}_stop_btn"):
             st.session_state[key_state] = "idle"
+            st.session_state.pop("active_quest_id", None)
             _lock_ui(False)
-            st.rerun()
+            st.rerun()   # 👈 thêm dòng này để rerender ngay nút "Bắt đầu thực hiện"
             return
 
         round_info = st.empty()
@@ -1252,6 +1253,7 @@ def main():
 if __name__ == "__main__":
     if "active_quest_id" not in st.session_state: st.session_state["active_quest_id"] = None
     main()
+
 
 
 
